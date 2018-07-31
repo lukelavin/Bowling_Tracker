@@ -225,7 +225,7 @@ public class Controller {
      */
     private void updateStats(int totalScore, int totalGames, String date) {
         //calculate the average given the sums of total pins and games
-        double average = totalScore / totalGames;
+        double average = (totalScore * 1.0) / totalGames;
 
         //enable and update the fields to display pins, games, average, and date properly
         statsTotalPins.setDisable(false);
