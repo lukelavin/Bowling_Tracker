@@ -1,0 +1,9 @@
+.root {
+    -fx-background-image: url("anime_bowling_girl.png");
+    -fx-background-position: center;
+    -fx-background-repeat: repeat;
+}
+
+.label {
+    -fx-font: 18px "System";
+}
