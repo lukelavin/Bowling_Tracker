@@ -46,7 +46,7 @@ public class Controller {
     public ChoiceBox yearSelector;
 
     public void initialize() throws IOException {
-        FileWriter fileWriter = new FileWriter("data.txt");
+        FileWriter fileWriter = new FileWriter("data.txt", true);
         fileWriter.write("");
         fileWriter.close();
 
