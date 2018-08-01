@@ -17,7 +17,7 @@ public class Main extends Application {
         Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
         primaryStage.setTitle("Bowling Tracker");
         primaryStage.getIcons().add(new Image(Main.class.getResourceAsStream("bowling_icon.png")));
-        primaryStage.setScene(new Scene(root, 800, 600));
+        primaryStage.setScene(new Scene(root, 770, 620));
         primaryStage.show();
     }
 

@@ -4,11 +4,16 @@
 
 package Bowling_Tracker;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
+
 /**
  * The Controller of the App. Handles data collection and
  * statistic calculation logic.
@@ -19,14 +24,13 @@ public class Controller {
     public TextField dailyScoreField; //field for the total daily score
     public TextField gamesPlayedField; //field for the # of games played that day
 
-    public DatePicker datePickerForCalc; //date picker for analyzing data past a specific date
-    public DatePicker singleDatePicker; //date picker for analyzing data from a single date
+    public DatePicker datePickerFrom; //date picker for analyzing data past a specific date
+    public DatePicker datePickerTo; //date picker for analyzing data from a single date
 
     public TextArea rawDataArea; //text area for viewing and editing the raw data used by the program
     public Button editDataButton; //button to confirm changes to the raw data
     public Label dataEditMessage; //confirmation message after data has been edited
     public CheckBox viewRawDataCheckbox; //checkbox to enable the text area and button for the raw data
-    private boolean dataEdited; //flag to see if the confirmation message was just shown
 
     //fields for displaying the calculated stats
     public TextField statsTotalPins; //text field to clearly display total pins over the background
@@ -34,8 +38,72 @@ public class Controller {
     public TextField statsAverageScore; //text field to clearly display average score over the background
     public TextField statsDate; //text field to clearly display the date from which data were analyzed over the background
 
+    public TableView monthTable;
+    public TableColumn monthColumn; //the table column displaying month
+    public TableColumn averageColumn; //the table column displaying the average for the month
+    public TableColumn scoreColumn; //the table column displaying the total score for the month
+    public TableColumn gamesColumn; //the table column displaying the total games for the month
+    public ChoiceBox yearSelector;
+
+    public void initialize() throws IOException {
+        yearSelector.getItems().remove(0, yearSelector.getItems().size());
+        yearSelector.getItems().addAll((Object[]) getYearsFromData());
+    }
+
+    private String[] getYearsFromData() throws IOException {
+        BufferedReader bufferedReader = new BufferedReader(new FileReader("src/Bowling_Tracker/data.txt"));
+
+        String line;
+        ArrayList<String> allLines = new ArrayList<String>();
+        while((line = bufferedReader.readLine()) != null) {
+            allLines.add(line);
+        }
+
+        String[] strs = allLines.toArray(new String[allLines.size()]);
+        strs = sortByDate(strs);
+        for(int i = 0; i < strs.length; i++) {
+            strs[i] = strs[i].substring(0, 4);
+        }
+        System.out.println("Sorted: " + Arrays.toString(strs));
+        strs = removeDuplicates(strs);
+        System.out.println("Duplicates Removed: " + Arrays.toString(strs));
+        return strs;
+    }
+
+    private String[] removeDuplicates(String[] strings) {
+        int uniqueCount = 0;
+        String[] copy = new String[strings.length];
+        for(int i = 0; i < copy.length; i++) {
+            copy[i] = strings[i];
+        }
+
+        String[] temp = new String[copy.length];
+        for(int i = 0; i < copy.length; i++) {
+            if(!contains(temp, copy[i])) {
+                temp[uniqueCount] = copy[i];
+                uniqueCount++;
+            }
+        }
+
+        copy = new String[uniqueCount];
+        for(int i = 0; i < copy.length; i++) {
+            copy[i] = temp[i];
+        }
+
+        return copy;
+    }
+
+    private boolean contains(String[] array, String target) {
+        for(String str : array) {
+            if(str != null && str.equals(target)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
-     * Formats the data from the 3 entry fields and inputs it into the data.txt file.
+     * Formats the data from the 3 entry fields and inputs it into the src/Bowling_Tracker/data.txt file.
      */
     public void addData(ActionEvent actionEvent) throws IOException {
         //take the input from the 3 entry fields and properly format it
@@ -46,7 +114,7 @@ public class Controller {
         System.out.println(stringBuilder);
 
         //use FileWriter to add the data to the text file without replacing previous data
-        FileWriter fileWriter = new FileWriter("data.txt", true);
+        FileWriter fileWriter = new FileWriter("src/Bowling_Tracker/data.txt", true);
         fileWriter.write(stringBuilder.toString());
         fileWriter.close();
 
@@ -57,12 +125,12 @@ public class Controller {
     }
 
     /**
-     * Reads from the data.txt file to iterate through the data and sum
+     * Reads from the src/Bowling_Tracker/data.txt file to iterate through the data and sum
      * the total pins scored and total games played. Calls updateStats() to
      * calculate average and update the statistics in the proper fields.
      */
     public void calculateAverage(ActionEvent actionEvent) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new FileReader("data.txt"));
+        BufferedReader bufferedReader = new BufferedReader(new FileReader("src/Bowling_Tracker/data.txt"));
         String line;
         int scoreSum = 0;
         int gamesPlayed = 0;
@@ -78,15 +146,51 @@ public class Controller {
         updateStats(scoreSum, gamesPlayed);
     }
 
-    /**
-     * Sorts the data.txt file by date, and then iterates through it
-     * to sum the total pins and total games from the date specified
-     * in the DatePicker currently. Then calls updateStats() to
-     * calculate average and update the statistics in the proper fields.
-     */
+
     public void calculateAverageFromDate(ActionEvent actionEvent) throws IOException {
-        System.out.println("test");
-        BufferedReader bufferedReader = new BufferedReader(new FileReader("data.txt"));
+        String sinceDate = datePickerFrom.getValue().toString();
+        String toDate = datePickerTo.getValue().toString();
+
+        if(sinceDate.equals(toDate))
+            calculateSingleDay(sinceDate);
+        else
+            calculateDateRange(sinceDate, toDate);
+    }
+
+    /**
+     * Iterates through the src/Bowling_Tracker/data.txt file to each entry from the date
+     * specified in the DatePicker. Then passes the total pins and
+     * total games into updateStats() to calculate average and update
+     * statistics in the proper fields.
+     *
+     * @param sinceDate    the date to use for calculations
+     */
+    private void calculateSingleDay(String sinceDate) throws IOException {
+        BufferedReader bufferedReader = new BufferedReader(new FileReader("src/Bowling_Tracker/data.txt"));
+        String line;
+        int scoreSum = 0;
+        int gamesPlayed = 0;
+        while((line = bufferedReader.readLine()) != null) {
+            if(!line.equals("") && line.substring(0, 10).equals(sinceDate)) {
+                String[] lineData = line.split(",");
+                scoreSum += Integer.parseInt(lineData[1]);
+                gamesPlayed += Integer.parseInt(lineData[2]);
+            }
+        }
+        bufferedReader.close();
+
+        updateStats(scoreSum, gamesPlayed, sinceDate);
+    }
+
+    /**
+     * Sorts the src/Bowling_Tracker/data.txt file by date, and then iterates through it
+     * to sum the total pins and total games from the date specified
+     * in the fromDatePicker currently to the date specified in the
+     * toDatePicker currently. Then calls updateStats() to calculate
+     * average and update the statistics in the proper fields.
+     */
+    private void calculateDateRange(String sinceDate, String toDate) throws IOException {
+        BufferedReader bufferedReader = new BufferedReader(new FileReader("src/Bowling_Tracker/data.txt"));
 
         String line;
         ArrayList<String> allLines = new ArrayList<String>();
@@ -99,16 +203,14 @@ public class Controller {
 
         int scoreSum = 0;
         int gamesPlayed = 0;
-        boolean sinceFlag = false; //flags true if the while loop has reached the target date
-        String sinceDate = datePickerForCalc.getValue().toString();
-        System.out.println(sinceDate);
+
         for(String str : strs) {
             if(!str.isEmpty()) {
                 String[] lineData = str.split(",");
-                if (lineData[0].compareTo(sinceDate) >= 0) {
-                    sinceFlag = true;
+                if(lineData[0].compareTo(toDate) > 0) {
+                    break;
                 }
-                if (sinceFlag) {
+                if (lineData[0].compareTo(sinceDate) >= 0) {
                     scoreSum += Integer.parseInt(lineData[1]);
                     gamesPlayed += Integer.parseInt(lineData[2]);
                 }
@@ -120,34 +222,11 @@ public class Controller {
     }
 
     /**
-     * Iterates through the data.txt file to each entry from the date
-     * specified in the DatePicker. Then passes the total pins and
-     * total games into updateStats() to calculate average and update
-     * statistics in the proper fields.
-     */
-    public void calculateSingleDay(ActionEvent actionEvent) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new FileReader("data.txt"));
-        String line;
-        int scoreSum = 0;
-        int gamesPlayed = 0;
-        while((line = bufferedReader.readLine()) != null) {
-            if(!line.equals("") && line.substring(0, 10).equals(singleDatePicker.getValue().toString())) {
-                String[] lineData = line.split(",");
-                scoreSum += Integer.parseInt(lineData[1]);
-                gamesPlayed += Integer.parseInt(lineData[2]);
-            }
-        }
-        bufferedReader.close();
-
-        updateStats(scoreSum, gamesPlayed, singleDatePicker.getValue().toString());
-    }
-
-    /**
-     * Overwrites the data.txt file entirely with what is currently in
+     * Overwrites the src/Bowling_Tracker/data.txt file entirely with what is currently in
      * the TextArea. A message is displayed when completed.
      */
     public void directEditData(ActionEvent actionEvent) throws IOException {
-        FileWriter fileWriter = new FileWriter("data.txt" );
+        FileWriter fileWriter = new FileWriter("src/Bowling_Tracker/data.txt" );
         fileWriter.write(rawDataArea.getText());
         fileWriter.close();
 
@@ -178,7 +257,7 @@ public class Controller {
         //updates the raw data text if being enabled
         if(!rawDataArea.isDisabled()){
             String rawDataText = "";
-            BufferedReader bufferedReader = new BufferedReader(new FileReader("data.txt"));
+            BufferedReader bufferedReader = new BufferedReader(new FileReader("src/Bowling_Tracker/data.txt"));
             String line;
             while((line = bufferedReader.readLine()) != null)
             {
@@ -190,7 +269,7 @@ public class Controller {
     }
 
     /**
-     * Sorts the data.txt file to find the earliest dated data, then passes along
+     * Sorts the src/Bowling_Tracker/data.txt file to find the earliest dated data, then passes along
      * the totalScore, totalGames, and the newly found date to the proper updateStats()
      * method.
      *
@@ -199,7 +278,7 @@ public class Controller {
      */
     private void updateStats(int totalScore, int totalGames) throws IOException {
         //find the earliest date
-        BufferedReader bufferedReader = new BufferedReader(new FileReader("data.txt"));
+        BufferedReader bufferedReader = new BufferedReader(new FileReader("src/Bowling_Tracker/data.txt"));
 
         String line;
         ArrayList<String> allLines = new ArrayList<String>();
@@ -213,6 +292,51 @@ public class Controller {
 
         //pass the info (including the newly found earliest date) to the more comprehensive method
         updateStats(totalScore, totalGames, firstLineSplit[0]);
+    }
+
+    public void updateMonthlyStats(ActionEvent actionEvent) throws IOException {
+        monthColumn.setCellValueFactory(
+                new PropertyValueFactory<MonthData, String>("month")
+        );
+        scoreColumn.setCellValueFactory(
+                new PropertyValueFactory<MonthData, Integer>("totalScore")
+        );
+        gamesColumn.setCellValueFactory(
+                new PropertyValueFactory<MonthData, Integer>("totalGames")
+        );
+        averageColumn.setCellValueFactory(
+                new PropertyValueFactory<MonthData, Double>("average")
+        );
+
+        String year = yearSelector.getValue().toString();
+        String[] months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        MonthData[] monthDatas = new MonthData[12];
+        for(int i = 0; i < monthDatas.length; i++) {
+            String prefix = year + "-";
+            if(i < 10){
+                prefix += "0";
+            }
+            prefix += i + 1;
+
+            BufferedReader bufferedReader = new BufferedReader(new FileReader("src/Bowling_Tracker/data.txt"));
+            String line;
+            int scoreSum = 0;
+            int gamesPlayed = 0;
+            while((line = bufferedReader.readLine()) != null) {
+                if(!line.equals("") && line.substring(0, 7).equals(prefix)) {
+                    String[] lineData = line.split(",");
+                    scoreSum += Integer.parseInt(lineData[1]);
+                    gamesPlayed += Integer.parseInt(lineData[2]);
+                }
+            }
+            bufferedReader.close();
+
+            monthDatas[i] = new MonthData(months[i], scoreSum, gamesPlayed, (1.0 * scoreSum) / gamesPlayed);
+        }
+
+        System.out.println(Arrays.toString(monthDatas));
+        ObservableList<MonthData> data = FXCollections.observableArrayList(monthDatas);
+        monthTable.setItems(data);
     }
 
     /**
