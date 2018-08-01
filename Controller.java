@@ -46,12 +46,16 @@ public class Controller {
     public ChoiceBox yearSelector;
 
     public void initialize() throws IOException {
+        FileWriter fileWriter = new FileWriter("data.txt");
+        fileWriter.write("");
+        fileWriter.close();
+
         yearSelector.getItems().remove(0, yearSelector.getItems().size());
         yearSelector.getItems().addAll((Object[]) getYearsFromData());
     }
 
     private String[] getYearsFromData() throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new FileReader("src/Bowling_Tracker/data.txt"));
+        BufferedReader bufferedReader = new BufferedReader(new FileReader("data.txt"));
 
         String line;
         ArrayList<String> allLines = new ArrayList<String>();
@@ -114,7 +118,7 @@ public class Controller {
         System.out.println(stringBuilder);
 
         //use FileWriter to add the data to the text file without replacing previous data
-        FileWriter fileWriter = new FileWriter("src/Bowling_Tracker/data.txt", true);
+        FileWriter fileWriter = new FileWriter("data.txt", true);
         fileWriter.write(stringBuilder.toString());
         fileWriter.close();
 
@@ -130,7 +134,7 @@ public class Controller {
      * calculate average and update the statistics in the proper fields.
      */
     public void calculateAverage(ActionEvent actionEvent) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new FileReader("src/Bowling_Tracker/data.txt"));
+        BufferedReader bufferedReader = new BufferedReader(new FileReader("data.txt"));
         String line;
         int scoreSum = 0;
         int gamesPlayed = 0;
@@ -166,7 +170,7 @@ public class Controller {
      * @param sinceDate    the date to use for calculations
      */
     private void calculateSingleDay(String sinceDate) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new FileReader("src/Bowling_Tracker/data.txt"));
+        BufferedReader bufferedReader = new BufferedReader(new FileReader("data.txt"));
         String line;
         int scoreSum = 0;
         int gamesPlayed = 0;
@@ -190,7 +194,7 @@ public class Controller {
      * average and update the statistics in the proper fields.
      */
     private void calculateDateRange(String sinceDate, String toDate) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new FileReader("src/Bowling_Tracker/data.txt"));
+        BufferedReader bufferedReader = new BufferedReader(new FileReader("data.txt"));
 
         String line;
         ArrayList<String> allLines = new ArrayList<String>();
@@ -226,7 +230,7 @@ public class Controller {
      * the TextArea. A message is displayed when completed.
      */
     public void directEditData(ActionEvent actionEvent) throws IOException {
-        FileWriter fileWriter = new FileWriter("src/Bowling_Tracker/data.txt" );
+        FileWriter fileWriter = new FileWriter("data.txt");
         fileWriter.write(rawDataArea.getText());
         fileWriter.close();
 
@@ -257,7 +261,7 @@ public class Controller {
         //updates the raw data text if being enabled
         if(!rawDataArea.isDisabled()){
             String rawDataText = "";
-            BufferedReader bufferedReader = new BufferedReader(new FileReader("src/Bowling_Tracker/data.txt"));
+            BufferedReader bufferedReader = new BufferedReader(new FileReader("data.txt"));
             String line;
             while((line = bufferedReader.readLine()) != null)
             {
@@ -278,7 +282,7 @@ public class Controller {
      */
     private void updateStats(int totalScore, int totalGames) throws IOException {
         //find the earliest date
-        BufferedReader bufferedReader = new BufferedReader(new FileReader("src/Bowling_Tracker/data.txt"));
+        BufferedReader bufferedReader = new BufferedReader(new FileReader("data.txt"));
 
         String line;
         ArrayList<String> allLines = new ArrayList<String>();
@@ -318,7 +322,7 @@ public class Controller {
             }
             prefix += i + 1;
 
-            BufferedReader bufferedReader = new BufferedReader(new FileReader("src/Bowling_Tracker/data.txt"));
+            BufferedReader bufferedReader = new BufferedReader(new FileReader("data.txt"));
             String line;
             int scoreSum = 0;
             int gamesPlayed = 0;
