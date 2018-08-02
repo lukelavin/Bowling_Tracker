@@ -10,6 +10,7 @@ import javafx.event.ActionEvent;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 
+import javax.xml.crypto.Data;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,28 +50,56 @@ public class Controller {
         FileWriter fileWriter = new FileWriter("data.txt", true);
         fileWriter.write("");
         fileWriter.close();
+        System.out.println("File present");
+
+        clearInvalidLines();
 
         yearSelector.getItems().remove(0, yearSelector.getItems().size());
         yearSelector.getItems().addAll((Object[]) getYearsFromData());
+        System.out.println("Years for drop down menu found: " + yearSelector.getItems().toString());
+    }
+
+    private void clearInvalidLines() throws IOException{
+        BufferedReader bufferedReader = new BufferedReader(new FileReader("data.txt"));
+
+        String data = "";
+        String line;
+        while((line = bufferedReader.readLine()) != null) {
+            if(!line.equals("")) {
+                String[] lineData = line.split(",");
+                if(lineData.length == 3) {
+                    boolean hasValidDate = DataValidator.isValidDate(lineData[0]);
+                    boolean hasValidScore = DataValidator.isValidNumber(lineData[1]);
+                    boolean hasValidGames = DataValidator.isValidNumber(lineData[2]);
+
+                    if(hasValidDate && hasValidScore && hasValidGames)
+                        data += line + "\n";
+                }
+            }
+        }
+        bufferedReader.close();
+        System.out.println("Invalid Data Cleared");
+
+
+        FileWriter fileWriter = new FileWriter("data.txt");
+        fileWriter.write(data);
+        fileWriter.close();
     }
 
     private String[] getYearsFromData() throws IOException {
         BufferedReader bufferedReader = new BufferedReader(new FileReader("data.txt"));
 
         String line;
-        ArrayList<String> allLines = new ArrayList<String>();
+        ArrayList<String> allYears = new ArrayList<String>();
         while((line = bufferedReader.readLine()) != null) {
-            allLines.add(line);
+            if(DataValidator.isValidYear(line.substring(0, 4))) {
+                allYears.add(line.substring(0, 4));
+            }
         }
 
-        String[] strs = allLines.toArray(new String[allLines.size()]);
+        String[] strs = allYears.toArray(new String[allYears.size()]);
         strs = sortByDate(strs);
-        for(int i = 0; i < strs.length; i++) {
-            strs[i] = strs[i].substring(0, 4);
-        }
-        System.out.println("Sorted: " + Arrays.toString(strs));
         strs = removeDuplicates(strs);
-        System.out.println("Duplicates Removed: " + Arrays.toString(strs));
         return strs;
     }
 
@@ -110,22 +139,36 @@ public class Controller {
      * Formats the data from the 3 entry fields and inputs it into the src/Bowling_Tracker/data.txt file.
      */
     public void addData(ActionEvent actionEvent) throws IOException {
-        //take the input from the 3 entry fields and properly format it
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(datePlayedField.getValue()+ ",");
-        stringBuilder.append(dailyScoreField.getText() + ",");
-        stringBuilder.append(gamesPlayedField.getText() + "\n");
-        System.out.println(stringBuilder);
+//        System.out.println((datePlayedField.getValue() != null && DataValidator.isValidDate(datePlayedField.getValue().toString()) &&
+//                dailyScoreField != null && DataValidator.isValidNumber(dailyScoreField.getText()) &&
+//                gamesPlayedField != null && DataValidator.isValidNumber(gamesPlayedField.getText())));
+//        System.out.println("Date played " + datePlayedField.getValue() + " " + DataValidator.isValidDate(datePlayedField.getValue().toString()));
+//        System.out.println("Score " + dailyScoreField.getText() + " " + DataValidator.isValidNumber(dailyScoreField.getText()));
+//        System.out.println("Games " + gamesPlayedField.getText() + " " + DataValidator.isValidNumber(gamesPlayedField.getText()));
+        if(datePlayedField.getValue() != null && DataValidator.isValidDate(datePlayedField.getValue().toString()) &&
+                dailyScoreField != null && DataValidator.isValidNumber(dailyScoreField.getText()) &&
+                gamesPlayedField != null && DataValidator.isValidNumber(gamesPlayedField.getText())) {
 
-        //use FileWriter to add the data to the text file without replacing previous data
-        FileWriter fileWriter = new FileWriter("data.txt", true);
-        fileWriter.write(stringBuilder.toString());
-        fileWriter.close();
+            //take the input from the 3 entry fields and properly format it
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append(datePlayedField.getValue() + ",");
+            stringBuilder.append(dailyScoreField.getText() + ",");
+            stringBuilder.append(gamesPlayedField.getText() + "\n");
+            System.out.println("Daily data added: " + stringBuilder);
 
+            //use FileWriter to add the data to the text file without replacing previous data
+            FileWriter fileWriter = new FileWriter("data.txt", true);
+            fileWriter.write(stringBuilder.toString());
+            fileWriter.close();
+        }
         //clear the data fields when done
         datePlayedField.getEditor().setText("");
         dailyScoreField.setText("");
         gamesPlayedField.setText("");
+
+        yearSelector.getItems().remove(0, yearSelector.getItems().size());
+        yearSelector.getItems().addAll((Object[]) getYearsFromData());
+        System.out.println("Years for drop down menu found: " + yearSelector.getItems().toString());
     }
 
     /**
@@ -238,6 +281,10 @@ public class Controller {
 
         toggleRawData();
         viewRawDataCheckbox.setSelected(false);
+
+        yearSelector.getItems().remove(0, yearSelector.getItems().size());
+        yearSelector.getItems().addAll((Object[]) getYearsFromData());
+        System.out.println("Years for drop down menu found: " + yearSelector.getItems().toString());
     }
 
     /**
