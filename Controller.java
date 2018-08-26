@@ -10,7 +10,6 @@ import javafx.event.ActionEvent;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 
-import javax.xml.crypto.Data;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -86,6 +85,12 @@ public class Controller {
         fileWriter.close();
     }
 
+    /**
+     * Parses data.txt to get each year in the data set without duplicates.
+     *
+     * @return  an array of all years present in the data set
+     * @throws IOException
+     */
     private String[] getYearsFromData() throws IOException {
         BufferedReader bufferedReader = new BufferedReader(new FileReader("data.txt"));
 
@@ -345,6 +350,13 @@ public class Controller {
         updateStats(totalScore, totalGames, firstLineSplit[0]);
     }
 
+    /**
+     * Sorts the data into monthly categories by parsing data.txt, then updates the table to properly
+     * display each month's data.
+     *
+     * @param actionEvent
+     * @throws IOException
+     */
     public void updateMonthlyStats(ActionEvent actionEvent) throws IOException {
         monthColumn.setCellValueFactory(
                 new PropertyValueFactory<MonthData, String>("month")
@@ -362,10 +374,10 @@ public class Controller {
         String year = yearSelector.getValue().toString();
         String[] months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
         MonthData[] monthDatas = new MonthData[12];
-        for(int i = 0; i < monthDatas.length; i++) {
-            String prefix = year + "-";
-            if(i < 10){
-                prefix += "0";
+        for(int i  = 0; i < monthDatas.length; i++) { //look for each month separately
+            String prefix = year + "-"; // determine what a line of data in the correct month would look like (the right year followed by the right month)
+            if(i < 9){
+                prefix += "0"; // add the necessary leading 0 to the single digit months
             }
             prefix += i + 1;
 
@@ -373,15 +385,16 @@ public class Controller {
             String line;
             int scoreSum = 0;
             int gamesPlayed = 0;
-            while((line = bufferedReader.readLine()) != null) {
-                if(!line.equals("") && line.substring(0, 7).equals(prefix)) {
-                    String[] lineData = line.split(",");
-                    scoreSum += Integer.parseInt(lineData[1]);
-                    gamesPlayed += Integer.parseInt(lineData[2]);
+            while((line = bufferedReader.readLine()) != null) { //read each line of the data
+                if(!line.equals("") && line.substring(0, 7).equals(prefix)) { //if the year and month are what's being looked for in the outer loop
+                    String[] lineData = line.split(","); // split the comma separated line to isolate the score and game numbers from the date and each other
+                    scoreSum += Integer.parseInt(lineData[1]); // add the score to the total sum of scores for the month
+                    gamesPlayed += Integer.parseInt(lineData[2]); //add the games played to the total sum of games played for the month
                 }
             }
             bufferedReader.close();
 
+            // add the monthly stats into a MonthData object displayed by the table
             monthDatas[i] = new MonthData(months[i], scoreSum, gamesPlayed, (1.0 * scoreSum) / gamesPlayed);
         }
 
